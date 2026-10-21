@@ -514,3 +514,38 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
 - Honest note for the next agent: I got a conclusion wrong earlier by inferring firewalls from a
   failed connect instead of testing the layer below. Test the socket first, then blame the
   firewall.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W31: shared-combat lab notes (partial success)
+
+Aim: make both players fight the same enemies (host authority, client sees the kills).
+
+What was measured on the GOG rig, two real processes, tutorial level:
+
+- **Enemy identity across instances.** 17 108 actors in both. Of the enemy-like actors, 188 (A) vs
+  183 (B); **122 share both name and position**, the rest are runtime-spawned with different
+  names (`..._2147480951` vs `..._2147480960`). So **name is not a key; position is** for the
+  spawned ones, and neither is sufficient alone while actors are still at the origin during load.
+- **The kill channel mechanically works.** One end-to-end application was observed:
+  `peer kill applied AVATAR d=45.4` — a kill published by one instance destroyed the matched
+  actor on the other. That is the whole path: local disappearance → publish position → peer
+  receives → matches → destroys.
+- **Tracking v2 (scan-every-200 ms) crashed the game on level load.** Full `FindAllOf("Actor")`
+  over 17 k objects on the game thread, repeatedly, is too heavy — especially when the window is
+  in the background and UE4 throttles the tick (that also stalled the other instance for
+  minutes). v4 uses `FindAllOf("Pawn")` plus `NotifyOnNewObject` instead of full scans.
+- **Position-only keys produce false kills.** Enemies sit at `(0,0,0)` during load; they collapse
+  into one key and a placement change looks like a kill ("local kill at 0,0,0"). Fixed by
+  requiring a settled, off-origin position before a disappearance counts.
+- **Mass disappearances are streaming, not kills.** A single refresh saw 48 enemies vanish
+  (sublevel streaming/checkpoint). Now more than 5 disappearances in one refresh is treated as
+  streaming: no kills reported.
+- **New transport bug found by this lane.** After a few minutes one direction went stale:
+  B's `inbox.json` showed `connected:false` while A's was fresh. Most likely cause: the bridge
+  **adopts `outbox.next.json` into `outbox.json` itself**, and my adapter was writing
+  `outbox.json` directly with delete-then-rename, fighting the bridge for the file. Fixed by
+  publishing `outbox.next.json` and using a plain rename (the contract in the bridge README).
+
+State of the feature: enemy tracking and the kill channel are **prototyped and partially
+verified**, not finished. Not claimed: shared damage, hit arbitration, resync after checkpoint,
+enemy attacks affecting both players. Those are the next pieces after the transport fix is
+re-tested.
