@@ -264,3 +264,44 @@ Entry format is in [`README.md`](README.md#log-entry-format).
   encouraging, but every recorded finding is build-specific until re-checked there.
 - Next: any claimed "works" must name the build it was checked on; do not assume transfer.
 - Claim: none (recorded risk).
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — SpawnActor works here; the menu-panel entry CRASHES here
+
+Two of the other agent's Steam-build findings were re-checked on this GOG build
+(SHA-256 `8AE0977F…4BD4`).
+
+- **`world:SpawnActor` — CONFIRMED on this build.** 
+  `world:SpawnActor(StaticFindObject("/Script/Engine.SkeletalMeshActor"), {X=0,Y=0,Z=150}, {Pitch=0,Yaw=0,Roll=0})`
+  returned a live `SkeletalMeshActor` at `(0,0,150)` in the menu world, and
+  `K2_SetActorLocation` moved it to `(300,0,150)` exactly. So a **non-player puppet spawn is
+  available from Lua**: the earlier `BeginSpawningActorFromClass` failures were indeed
+  `FTransform` marshalling (`K2_GetActorTransform()` returns nil), and `SpawnActor` sidesteps
+  it by taking `FVector` + `FRotator` tables. **W11 is unblocked.**
+- **`BP_PanelStartMenu_C:Ghostrunner()` — CRASHES on this build.** `FindFirstOf("BP_PanelStartMenu_C")`
+  does return the live widget, but calling `Ghostrunner()` on it produced an immediate
+  `Fatal Error` and a 26 MB crash dump (`crash_2026_10_21_16_55_32.dmp`) about one second
+  later. The Lua line after the call never ran, i.e. the call blocks the game thread and then
+  dies.
+
+**Consequence: the same technique has different results on the two builds.** That is the
+first concrete cross-build divergence in this project, and it means no runtime finding may be
+treated as portable without re-checking it on the other executable. On this build the only
+working level entry remains the menu-click path (W1); on the Steam build the panel call works.
+Nobody should delete the menu path yet.
+
+Crash budget so far on the GOG copy: two dumps, both deliberate and understood — the
+`OpenLevel(…,"listen")` Model-A attempt and this panel call.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — notes on the other agent's in-level warning
+
+- Reported by the other agent for the Steam build: creating local player 1 **inside** the
+  tutorial left player 0 with `Pawn=nil` (its old pawn still existed with `Controller=nil`),
+  and `CharacterMesh0.SkeletalMesh` is nil on both player bodies (the visible first-person
+  hands are a separate component). Unverified here — my behaviour was only checked at the menu.
+- Why it matters: my W13 menu-only result is **not** sufficient evidence for gameplay sync, and
+  any adapter must re-verify slot behaviour in a level. With `world:SpawnActor` now confirmed,
+  the puppet path does not need `CreatePlayer` at all, which side-steps the whole risk.
+- Next for this lane: level entry that does not crash on this build (make the menu-click path
+  deterministic: mark the game window topmost so clicks always land, read state back with
+  `PrintWindow`), then spawn the puppet in-level, give it the player's mesh, drive it, and
+  capture two frames that show it standing where the external target says.
