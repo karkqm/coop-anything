@@ -626,3 +626,45 @@ re-tested.
 - Not implemented: shared health/damage. Ghostrunner's regular enemies die in one hit, so a death
   event carries all the gameplay-relevant state for them; bosses with health phases would need
   real HP sync, which this lane does not claim.
+
+### 2026-10-22 — lead (deepseek, session 2026-10-21) — W35: auto-entry investigation (direction change)
+
+Owner's new direction: a test level that can be entered without a human, then event synchronization in
+the game itself. This entry records what the auto-entry investigation found on the GOG build.
+
+Blocked paths (each tested once, with a file log written before the risky call):
+
+- **Command-line map**: `Ghostrunner-Win64-Shipping.exe /Game/Levels/Tutorial/L_Tutorial_Persistant`
+  is ignored; the game always boots into `MainMenu`.
+- **`APlayerController:ConsoleCommand(cmd, true)`**: not callable from Lua (UE4SS cannot call this
+  non-reflected method; it errors out as a Lua function value).
+- **`KismetSystemLibrary:ExecuteConsoleCommand`** through the CDO: the call *succeeds*, but
+  `open /Game/Levels/Tutorial/L_Tutorial_Persistant` executes and the world does not change — the
+  game refuses travel from the menu state.
+- **`UWorld:ServerTravel`**: errors; no travel.
+- **`UGameplayStatics:OpenLevel`**: crashes (known from earlier rounds, not retried).
+- **Menu panel functions**: `BP_PanelStartMenu_C` exposes only `RefreshSubMenuPosition` on this
+  build; the Steam-build-only entry function is genuinely absent.
+- **Function lookup by name** (`StaticFindObject("<class>:<StartGame|Continue|...>")`): no hits for
+  24 candidate names on the game manager or the panel.
+
+What *does* work, and is the promising route:
+
+- **The UMG widget tree is fully readable from Lua.** Root is
+  `CanvasPanel ...WidgetTree.CanvasMainMenu`, and the menu exposes exactly these buttons:
+  `BtnContinue`, `BtnNewGame`, `BtnLevelSelect`, `BtnKillRun`, `BtnSurvival`, `BtnGhostrunner`,
+  `BtnHEL`, plus a `CanvasInfoHEL` info panel.
+- The buttons are a custom class `/Script/Ghostrunner.ButtonOML` with one function `TryNavigate`
+  and one property `Panel`; the click delegate is exposed as `OnButtonClicked` (a UObject handle),
+  not as `UButton.OnClicked`.
+- `btn:TryNavigate()` called with no arguments errors, so it takes parameters (probably the target
+  panel/entry). Discovering its signature and the semantics of `OnButtonClicked` is the next step.
+
+Notes for the test-map question: a truly custom map needs the UE4 editor plus cooking into a pak,
+which is heavy and fragile for this GOG build. The practical "test map" is an existing small level
+(the tutorial is what every test in this project has used) entered automatically; that gives the
+same benefit (no human in the loop, deterministic) without touching the pak format.
+
+Next: (1) get `TryNavigate`'s parameters / invoke `OnButtonClicked`, (2) if that fails, ask the owner
+whether OS-level input on a dedicated test-copy window is acceptable as the last resort, and
+(3) once entry is automatic, move on to event synchronization.
