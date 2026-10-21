@@ -577,3 +577,26 @@ re-tested.
   in-level run.
 - Next: one in-level run (kill an enemy in A, verify it disappears in B, and back), then attacks
   and damage. Everything else in this lane is now at "needs one level load to confirm".
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W33 PASS: enemy death sync works in-level, both directions
+
+- Did: with the fixed transport, PendingKill-aware liveness and the live-position matcher, ran two
+  real processes in `/Game/Levels/Tutorial/L_Tutorial_Persistant` and destroyed one enemy on each
+  side through the test hook (a deliberate programmatic destroy, not a sword hit).
+- Result:
+  - 23:45:11 A destroys `BP_EnemyShooterPistol14` → 23:45:12 B: `peer kill applied
+    BP_EnemyShooterPistol14 d=0.0`;
+  - 23:45:19 B destroys `BP_EnemyShooterPistol15` → 23:45:19 A: `peer kill applied
+    BP_EnemyShooterPistol15 d=0.1`.
+  Both matched at essentially zero distance: position matching across two instances works for
+  enemies that are placed by the level.
+- Also: 13 enemies were tracked and settled on both sides after the level finished streaming, and
+  the `mass disappear 48` event at load was correctly ignored as streaming.
+- **Bug found in the same run**: the avatar and its marker were spawned in the *menu* world and not
+  recreated after the level load, because the world-change handler reset the enemy state but not
+  the avatar/marker references. Fixed by clearing them on world change (they are destroyed with
+  the old world and the references are stale).
+- Honest limit: this proves the *channel* (death reported → matched → destroyed on the peer). It
+  does not yet prove a real **sword kill** is detected: that needs one run where a human kills an
+  enemy, which is the next check. Shared health/damage is not implemented; for one-hit-kill enemies
+  a death event is the whole gameplay-relevant state, for bosses it is not.
