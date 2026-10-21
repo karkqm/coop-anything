@@ -145,7 +145,8 @@ class Pair:
         self.trace = (args.output / 'observations.jsonl').open('w')
         for i, directory in enumerate(self.dirs):
             current = read_json(directory / 'runtime.json') or {}
-            self.ids[i] = int(current.get('qa_id') or 0)
+            pending = read_json(directory / 'qa.json') or {}
+            self.ids[i] = max(int(current.get('qa_id') or 0), int(pending.get('id') or 0))
 
     def observe(self):
         result = []

@@ -150,9 +150,10 @@ packet drops/duplicates, no sequence regression, cleared poses, and reconvergenc
 Artifacts and a machine-readable `summary.json` stay in ignored
 `local/ghostrunner-transport-tests/`; `--output PATH` selects another directory.
 Child processes started by the suite are stopped during cleanup. No game process is
-started or stopped. A passing run ends with `ALL OK`; the Ghostrunner QA level remains
-`none` until the adapter is checked with real game clients.
+started or stopped. A passing run ends with `ALL OK`. This suite establishes transport
+behavior; the separate [runtime checks](runtime/README.md) describe the avatar tests
+actually run with real game clients and their limits.
 
 Design references: [PoppyCoop file seam](../../games/poppy-playtime/NOTES.md),
 [networking playbook](../../playbook/networking.md), and
-[Ghostrunner coordination decisions](../../games/ghostrunner/coordination/README.md).
+[Ghostrunner claim issue](https://github.com/cranebeaker/coop-anything/issues/108).

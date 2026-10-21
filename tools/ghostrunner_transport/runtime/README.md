@@ -55,11 +55,19 @@ python -I tools/ghostrunner_transport/runtime/verify_motion.py --a-dir <net-A> -
 
 The passing pair run reached 9 gates, including the floor/capsule fixture checks;
 its 10% loss, 80 +/- 40 ms delay/reorder profile recorded actual dropped packets.
-The earlier motion run moved the source 724 cm through real `AddMovementInput`,
-observed advancing walk/run animation and evaluated foot movement on the observer,
-verified the katana stayed attached, and captured the source's real melee callback
-in the observer animation. The motion check must be repeated after fixture and
-packaging changes. Rendered inspection and a standalone launcher are still in progress.
+The motion check now initializes that same fixture and exercises **each source**
+through real `AddMovementInput` and the game's melee callback. The passing run moved
+A 1173 cm and B 631 cm, with respectively 9 and 5 distinct received moving snapshots
+matching recorded real source poses/velocities. Animation clocks and evaluated feet
+advanced, both katana parts stayed on the animated hand, and both sources' melee
+actions reached the observer animation. Matching uses the source snapshot actually
+received, since the source's newer state can differ during transport delay.
+
+Game-window captures from both clients were inspected: a complete humanoid and its
+katana are visible, with posed arms rather than a horizontal bind pose. The temporary
+avatar still uses the enemy's stock poses, including its aimed idle; a dedicated Jack
+body and sword animations are future work. Integration is manual; no standalone
+installer or launcher is provided yet.
 
 The helper suite now has 8 passing tests, including Lua staged-file adoption.
 These checks prove the described avatar prototype, not campaign co-op or

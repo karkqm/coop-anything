@@ -350,3 +350,38 @@ world. That is the next experiment, and it is the last cheap one for Model A.
 - Steam appdetails (no multiplayer category): https://store.steampowered.com/api/appdetails?appids=1139900&l=english
 - Stray local co-op (UE4SS-Lua precedent): https://github.com/CyberLifeYT/Stray-Local-Co-op-Mod
 - HogWarp (closed UE4 online co-op precedent): https://hogwarp.com/
+
+## Steam avatar synchronization evidence (2026-10-21, Codex)
+
+This section records a separate rig, not a reclassification of the GOG experiments
+above. Coordination is in [claim issue #108](https://github.com/cranebeaker/coop-anything/issues/108).
+Runtime sources and test commands: [adapter README](../../tools/ghostrunner_transport/runtime/README.md).
+
+OBSERVED on Windows, Steam build 9002517, shipping executable SHA-256
+`C6CEBA1A667A7859606CF3922B51ACE6F0032A2637718C2502D6B433A8202454`, UE4SS 3.0.1:
+
+- Two isolated game copies, private `-UserDir` profiles, one real local player per
+  process, in `/Game/Levels/Tutorial/L_Tutorial_Persistant`. A separate native
+  `Engine.Character` receives the other process's pose over the UDP bridge.
+- Loaded `Enemy_Pistol_01` provides a temporary full humanoid and compatible stock
+  idle/walk/run/air/attack clips. The player's own katana blade and handle can be
+  attached to its `hand_r` bone. Both game-window captures show the body and katana,
+  with posed arms. The enemy's aimed idle is still used; this is not Jack's exact set.
+- Pair verification passed 9 gates, including actual source/body transform checks,
+  actual animation time/bones and weapon attachment, negative controls, disabled
+  receive mutation, packet loss/delay/reorder, and five-second blackout/recovery.
+  The tutorial fixture is validated by native floor/capsule queries (measured player
+  half-height 96, radius 50), rather than choosing arbitrary coordinates.
+- Symmetric motion verification passed for both sources through real
+  `AddMovementInput` and real melee callbacks: A moved 1173 cm (9 distinct matched
+  moving snapshots), B moved 631 cm (5). Observer feet/animation clocks advanced;
+  katana parts followed the evaluated hand; both real attacks reached the observer.
+- Helper suite: 8 passing tests, including atomic adoption of Lua's
+  `outbox.next.json` on Windows. Delete-then-rename is unnecessary.
+- Original install metadata (88 files) and protected save/config hashes (31 files)
+  were unchanged. Game files, profiles, logs and images stay in ignored local storage.
+
+UNKNOWN / not implemented: Steam/GOG interoperability, dedicated Jack full-body
+animations, campaign/world authority, enemies/damage/checkpoints/saves, level travel
+and respawn synchronization. Manual integration only; no standalone launcher yet.
+These are avatar synchronization checks, not proof of playable campaign co-op.

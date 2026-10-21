@@ -139,6 +139,15 @@ class ProcessTests(unittest.TestCase):
         value = read_json(self.work / role / "inbox.json")
         return value and value["connected"] and value["state"] == expected
 
+    def inbox(self, role):
+        # Windows may briefly deny a read while the bridge replaces this file.
+        # Missing data must retry, never count as an observed disconnect.
+        return wait_for(lambda: read_json(self.work / role / "inbox.json"))
+
+    def disconnected(self, role):
+        value = read_json(self.work / role / "inbox.json")
+        return value and value.get("connected") is False
+
     def converge(self, tick=1):
         host = self.snapshot("host", tick)
         client = self.snapshot("client", tick)
@@ -161,7 +170,7 @@ class ProcessTests(unittest.TestCase):
         stale = self.work / "host" / "outbox.json"
         os.utime(stale, (time.time() - 20, time.time() - 20))
         wait_for(lambda: self.received("client", None))
-        self.assertTrue(read_json(self.work / "client" / "inbox.json")["connected"])
+        self.assertTrue(self.inbox("client")["connected"])
         self.converge(2)
         for invalid in [b"{", b"[]", b'{"x":NaN}', b"x" * 2000,
                         json.dumps({"text": "x" * 1100}).encode()]:
@@ -213,7 +222,7 @@ class ProcessTests(unittest.TestCase):
         wait_for(lambda: all((read_json(self.work / role / "inbox.json") or {}).get(
             "connected") is False for role in ("host", "client")))
         for role in ("host", "client"):
-            self.assertIsNone(read_json(self.work / role / "inbox.json")["state"])
+            self.assertIsNone(self.inbox(role)["state"])
         time.sleep(1)
         self.converge(1000)
         self.assertTrue(all(p.poll() is None for p in (host, client, chaos)))
@@ -222,21 +231,21 @@ class ProcessTests(unittest.TestCase):
         host, port = self.bridge("host")
         client, _ = self.bridge("client", port)
         self.converge()
-        old_session = read_json(self.work / "host" / "inbox.json")["session"]
+        old_session = self.inbox("host")["session"]
         client.kill()
         client.wait(timeout=3)
-        wait_for(lambda: not read_json(self.work / "host" / "inbox.json")["connected"])
+        wait_for(lambda: self.disconnected("host"))
         client, _ = self.bridge("client", port, tag="client-restart")
         self.converge(2)
-        self.assertNotEqual(read_json(self.work / "host" / "inbox.json")["session"], old_session)
-        old_session = read_json(self.work / "client" / "inbox.json")["session"]
+        self.assertNotEqual(self.inbox("host")["session"], old_session)
+        old_session = self.inbox("client")["session"]
         host.kill()
         host.wait(timeout=3)
-        wait_for(lambda: not read_json(self.work / "client" / "inbox.json")["connected"])
+        wait_for(lambda: self.disconnected("client"))
         host, new_port = self.bridge("host", port=port, tag="host-restart")
         self.assertEqual(port, new_port)
         self.converge(3)
-        self.assertNotEqual(read_json(self.work / "client" / "inbox.json")["session"], old_session)
+        self.assertNotEqual(self.inbox("client")["session"], old_session)
 
     def test_host_ignores_unauthenticated_datagrams(self):
         host, port = self.bridge("host")
@@ -245,7 +254,7 @@ class ProcessTests(unittest.TestCase):
                          uuid.uuid4().hex, 1, {"injected": True})]:
                 sender.sendto(wire, ("127.0.0.1", port))
         time.sleep(0.15)
-        self.assertFalse(read_json(self.work / "host" / "inbox.json")["connected"])
+        self.assertFalse(self.inbox("host")["connected"])
         self.assertIsNone(host.poll())
         self.bridge("client", port)
         self.converge()
