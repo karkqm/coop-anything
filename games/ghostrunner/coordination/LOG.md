@@ -549,3 +549,31 @@ State of the feature: enemy tracking and the kill channel are **prototyped and p
 verified**, not finished. Not claimed: shared damage, hit arbitration, resync after checkpoint,
 enemy attacks affecting both players. Those are the next pieces after the transport fix is
 re-tested.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W32: death detection solved, channel half-verified
+
+- **Transport fix confirmed.** After switching the adapter to publish `outbox.next.json` (the
+  bridge adopts it), both directions stayed fresh for minutes: `connected=true`, `seq` ~11 000,
+  age 0.0-0.1 s on both sides. The earlier one-way staleness is gone.
+- **Death detection: solved.** A destroyed UE4 actor keeps `IsValid() == true` until GC — that is
+  why killing an enemy was invisible to the sync. Probe result on this build:
+  `EInternalObjectFlags.PendingKill = 536870912`, and right after `K2_DestroyActor()`:
+  `IsValid=true`, `HasAnyInternalFlags(PendingKill)=true`, `bHidden=false`,
+  `IsActorBeingDestroyed=false`, `GetActorLocation=(0,0,0)`.
+  So liveness must be `IsValid() and not HasAnyInternalFlags(PendingKill)`; `GetActorLocation`
+  returning the origin is a second usable signal. This is the single most reusable fact from
+  this lane.
+- **Peer-kill matcher fixed**: it used to require a "settled" target, so a legitimate kill of a
+  freshly spawned or moving enemy was skipped (`peer kill unmatched`). It now matches against
+  every tracked actor using its live position, falling back to the last known one.
+- **Distance filter removed**: reporting a kill only when the enemy was near the player silently
+  dropped valid kills; the mass-disappearance guard is the real protection against streaming.
+- **Observed working**: `peer kill applied AVATAR d=0.0` — a kill published by one instance
+  destroyed the matched actor on the other, twice, with the fixed matcher.
+- **Why the menu-world harness cannot finish the job**: both players stand at the origin in the
+  menu, so the avatar is driven to `(0,0,0)`, the origin guard never lets it "settle", and the
+  test hook has no selectable target. That is a limitation of the harness, not of the feature —
+  in a level, enemies are away from the origin. The final end-to-end check therefore needs one
+  in-level run.
+- Next: one in-level run (kill an enemy in A, verify it disappears in B, and back), then attacks
+  and damage. Everything else in this lane is now at "needs one level load to confirm".
