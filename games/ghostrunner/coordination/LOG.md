@@ -410,3 +410,55 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
 - Next: same loop in the tutorial level with real movement, a visible mesh on the puppet, then a
   scripted assertion (puppet vs peer's true position within a tolerance over N samples) to move
   QA from `none` to `automated`.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W27 PASS: automated assertion on the sync pipeline
+
+- Did: added a snap-on-first-packet fix to the adapter (the first peer pose after connect is
+  applied directly instead of being lerped from the spawn point) and wrote a checker that
+  parses both logs and asserts convergence, movement and activity.
+- Result: `RESULT: PASS` on both instances.
+  - A: steady-state error median 7.7, p95 9.8, max 10.2 (tolerance 60); warm-up max 8.0;
+    puppet movement spread 400; published 1808 / received 1672.
+  - B: median 7.6, p95 9.8, max 10.9; warm-up max 9.8; spread 400; published 1686 / received 1667.
+  - Both sides in one world (`/Game/Levels/MainMenu/MainMenu`).
+- The snap fix mattered: before it, A's worst error was 300.6 (the puppet travelling from its
+  spawn point to the first received pose). That was a real quality bug, not a test artefact.
+- The harness drives two real game processes and asserts shared state from their logs, so by
+  the hub's definition this is **`automated` for the sync pipeline**. It is NOT `automated` for
+  the game: the run is in the menu world with scripted motion, not gameplay with real input.
+  The write-up's QA level should say exactly that split, or stay `none` until a gameplay run
+  passes the same assertions.
+- Note on input: no keystrokes or clicks were sent to the game at all in this round. The test
+  motion is a scripted teleport path in the adapter's MOVER mode, which is a test harness, not
+  a claim that real input syncs.
+- Next: package the kit (mod + relay + launcher + two-machine instructions), then a gameplay
+  run where a human starts the level in each instance and the same checker asserts the pairs.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W28 PASS on GOG: their runtime, real gameplay, verified
+
+- Context: the other agent shipped a much stronger runtime (`Engine.Character` avatar, stock
+  animation clips, katana on `hand_r`) and explicitly left the GOG rig to me. I installed their
+  `GhostrunnerSync` into both GOG test copies, used their newer bridge (which adopts
+  `outbox.next.json` instead of delete-then-rename), and had a human load the tutorial level in
+  each window, because the scripted level entry crashes this build.
+- Result, both instances in `/Game/Levels/Tutorial/L_Tutorial_Persistant`, `gameplay=true`,
+  `peer_usable=true`, avatar spawned, visible, with `SK_Enemy_Pistol_01`:
+  - moving A with the QA bot (`AddMovementInput`, no keyboard input at all): source travelled
+    **814 units**; B's avatar tracked the expected peer pose with **median 0.0, p95 0.0** error.
+  - moving B: source travelled **1132 units**; A's avatar error **median 0.0, p95 0.0**.
+  - transport error (sender's own position vs the pose that arrived) p95 was 63 and 92 units,
+    which is expected: the sender keeps moving between publishes.
+  - **Visual proof:** a `PrintWindow` capture of the observer shows the peer avatar standing in
+    the level in front of the camera, humanoid, holding a weapon pose; the local first-person
+    katana is visible in the same frame.
+- So: **two real game processes, one level, real movement, visible remote avatar, on the GOG
+  build** — and the same assertions pass there as on the author's Steam build. This is the
+  first end-to-end "co-op is working" result with visual evidence.
+- What is still not proven: two different machines over a real network (only one machine, two
+  processes on loopback), Steam<->GOG interoperability, and everything about world/enemy/story
+  sync. The avatar is a proxy humanoid, not the player's body.
+- Kit: assembled in the workspace (`kit/`) with `install.ps1` (UE4SS hash-pinned + runtime +
+  config), `run.ps1` (host/client bridge + game), `verify_sync.py` (the assertion I just ran),
+  and a Russian README that states the verified/unverified split honestly.
+- Next: two-machine run if a second PC is available; otherwise keep the single-machine
+  two-process rig as the reference and stop claiming more than it shows.
