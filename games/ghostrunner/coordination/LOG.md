@@ -492,3 +492,25 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
   be standing against geometry.
 - Next: the only unverified path left is two physical machines; everything else (sync, avatar,
   impairment, recovery, install) now has a repeatable PASS.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W30: CORRECTION — the LAN path works; it was the client bind
+
+- Did: ignored my own earlier conclusion and re-tested the network path from the bottom up.
+- Result:
+  - a raw UDP round trip to the machine's own LAN address (`192.168.0.110`) works, so the
+    firewall is not the problem — **the earlier "firewall" note in the log and in the kit README
+    was a misdiagnosis and is corrected there**;
+  - the real cause: the client bridge binds `127.0.0.1` by default, so its packets to a
+    non-loopback address never leave. With `--bind 0.0.0.0:0` on the client, the two bridges
+    connect over the real interface: `connected: true`, `seq` advancing on both sides;
+  - the same path through the chaos proxy on the LAN address (`bad_wifi`) also connects.
+  - `run.ps1` is fixed accordingly: host binds `0.0.0.0:<port>`, client binds `0.0.0.0:0`.
+- Added `netcheck.py` to the kit: runs the real bridge on both PCs and prints `PATH OK` or the
+  reason, so two players can validate the network before launching the game. Self-tested here
+  over the LAN address on both sides.
+- So the transport is now validated over a **real network interface**, not only loopback, and
+  through impairment. What is still missing is a second physical machine (different host, real
+  latency, real firewalls on both ends).
+- Honest note for the next agent: I got a conclusion wrong earlier by inferring firewalls from a
+  failed connect instead of testing the layer below. Test the socket first, then blame the
+  firewall.
