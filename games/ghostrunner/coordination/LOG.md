@@ -202,3 +202,65 @@ Entry format is in [`README.md`](README.md#log-entry-format).
 - Next: W12 — two processes, each driving the other's peer slot from a state file. Use the
   world-triggered pattern; do not fire steps on wall-clock timers.
 - Claim: W10 done v0; W11/W12/W13 opened.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W13 progress: peer slot WITHOUT split screen
+
+- Did: set `GameMapsSettings.bUseSplitscreen = false` **before** creating the second local
+  player, then created it and drove its pawn; captured the game window with `PrintWindow`
+  (works even when the window is occluded, so no focus games needed).
+- Result: `bUseSplitscreen` is **`true` by default** in this game. Setting it to `false` does
+  not stop `UGameplayStatics:CreatePlayer(pc, 1, true)` from working: controllers went 1 → 2,
+  a peer pawn existed, and `K2_SetActorLocation` moved it to `(250,120,0)` exactly. The
+  captured frame at the menu is a **single full-frame view, not split**, with the flag off.
+  Still to prove in a real level: that player 0 keeps the camera and the peer pawn stays
+  invisible-but-simulated.
+- Also settled: select the slots by `PlayerController.Player.ControllerId` (`0` = local player,
+  `1` = peer slot). `FindAllOf` order is not stable, so "first/second found" is wrong.
+- Next: repeat inside `/Game/Levels/Tutorial/L_Tutorial_Persistant` (needs the menu path or a
+  spotter), confirm single view + camera ownership there, then hand the slot to the W3 adapter.
+- Claim: W13 in progress; W11 still blocked.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W11 root cause: UE4SS struct marshalling, not the spawn call
+
+- Did: retried the non-player puppet spawn passing a **transform produced by the engine**
+  (`pawn:K2_GetActorTransform()`) instead of a Lua table.
+- Result: `K2_GetActorTransform()` returns **nil**, so the problem is not "the spawn function
+  rejects a table" — UE4SS is failing to marshal `FTransform` (a struct return) at all.
+  `BeginSpawningActorFromClass` therefore fails for every variant for the same reason, and the
+  raised value is a `UFunction` object rather than an error string, which hid it.
+  Consequence: spawning a non-player puppet from Lua needs a different route
+  (`StaticConstructObject` + `FinishSpawning`, a Blueprint helper actor such as the community
+  `ModActor` convention, or a C++ UE4SS mod). The W13 peer-slot path avoids it entirely and is
+  already working, so this is no longer on the critical path.
+- Next: keep W11 parked unless the peer-slot viewport cannot be suppressed in a real level.
+- Claim: W11 parked with root cause recorded.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — third-party transport reviewed and verified
+
+- Did: reviewed PR #1 in the fork (branch `codex/ghostrunner-transport`, author `usav12`),
+  cloned it and ran its suite with the repo venv.
+- Result: **7/7 tests pass on my machine** (`Ran 7 tests in 7.076s / OK / ALL OK`), so the
+  claim checks out independently. Code reads sound: HMAC-SHA256 with `compare_digest` over
+  canonical JSON, strict envelope key set, monotonic time for timeouts, session/sequence/
+  address fencing with a bounded retired list, atomic write-then-rename with retry, bounded
+  reads and bounded receive work per tick, endpoint pinning, no `subprocess`/`eval`/`exec`.
+  Two non-blocking notes: it publishes `inbox.json` once per accepted packet (up to 128
+  writes per tick under a duplicate flood), and two of its relative links assume the
+  coordination folder is present in the tree.
+- Also: **retargeted PR #1's base to `ghostrunner-coordination`** so the transport and the
+  coordination files cannot land back in the hub PR #107 (the maintainer asked for
+  `games/ghostrunner/coordination/` to stay out of the hub).
+- Next: the adapter owner connects the observed pawn to the peer slot and the W3 bridge, and
+  asserts remote transforms in two real processes. Game sync is still `none`.
+- Claim: review done on PR #1; division confirmed (transport/integration = other agent,
+  puppet/viewport = lead).
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — build mismatch between the two rigs
+
+- Did: compared the two executables in use.
+- Result: this rig is GOG, `Ghostrunner-Win64-Shipping.exe` SHA-256 `8AE0977F…4BD4`
+  (2022-06-23). The other agent's rig is **Steam build 9002517**, SHA-256 `C6CEBA1A…2454`.
+  UE4SS reporting 4.26 and the same `PlayerControllerOML` / `BP_MenuPawn_C` names on both is
+  encouraging, but every recorded finding is build-specific until re-checked there.
+- Next: any claimed "works" must name the build it was checked on; do not assume transfer.
+- Claim: none (recorded risk).
