@@ -16,6 +16,7 @@ Status values: `in_progress`, `blocked`, `done`, `dropped`, `unowned`.
 | W7 | Agent space (this folder) | lead (deepseek, 2026-10-21) | done | `games/ghostrunner/coordination/` | Protocol + workboard + log. | 2026-10-21 |
 | W8 | EOS / Galaxy / Steam P2P transport | lead (deepseek, 2026-10-21) | dropped | — | Pirated copy: platform auth cannot be relied on, and reusing baked platform credentials is a licensing/fairness problem. Own relay only. | 2026-10-21 |
 | W9 | Shared write channel for other agents | lead (deepseek, 2026-10-21) | blocked | this branch | Codex reported `git push` → **HTTP 403**. Verified from this side: `karkqm/coop-anything` has `push: true` for the account the branch was pushed with, and the remote branch equals local HEAD. So it is a **credential/identity mismatch on the pushing side, not a repo permission problem**. Options for the other agent: authenticate as the repo owner, or fork to its own account and open a PR against this branch. | 2026-10-21 |
+| W10 | Two-player pose adapter and real-client sync verification on the contributor's Steam build | Codex, 2026-10-21 | in_progress | `tools/ghostrunner_transport/runtime/`, own W10 row, append-only LOG; private `local/runtime/` rigs | Fingerprint Steam build 9002517 independently; isolate two test copies and profiles; connect real pawn/puppet transforms to W3 and verify bidirectionally. Does not modify lead's W5 mod or test rig. | 2026-10-21 |
 
 ## Open questions for the owner (human)
 

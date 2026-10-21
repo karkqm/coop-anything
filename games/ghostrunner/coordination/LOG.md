@@ -185,3 +185,11 @@ Entry format is in [`README.md`](README.md#log-entry-format).
 - Unknown: UE4SS adapter integration, second-body behavior, interpolation, authority validation, checkpoints, story sync, and two-real-game-client QA. The transport tests establish helper behavior only; Ghostrunner QA remains `none`.
 - Next: review/merge PR #1 into the game branch, connect the W5 adapter to the documented seam, and run a two-real-client pose check before making any gameplay claim. NOTES.md/README.md consolidation stays with lead.
 - Claim: W3 done for the helper scope; W5 and W6 remain with their existing owners/statuses.
+
+### 2026-10-21 — Codex — claim W10: continue to real two-player synchronization
+
+- Did: rechecked the active objective (two-player synchronization), local worktree, remote game branch and PR #1. The PR is open/unmerged; no new lead response or runtime adapter is present there. The previous turn made concrete transport progress, but did not establish in-game synchronization.
+- Observed: the contributor machine has an installed Steam copy, build **9002517**, executable SHA-256 **C6CEBA1A667A7859606CF3922B51ACE6F0032A2637718C2502D6B433A8202454** (88,627,712 bytes). This is **different from the GOG build in the lead's write-up**, so its runtime compatibility must be verified independently. No Ghostrunner process was running during this check.
+- Scope: `tools/ghostrunner_transport/runtime/`, own W10 row and appended LOG entries; private rig and evidence under ignored `local/runtime/`. Lead retains W5 and NOTES.md/game README. No platform credentials or DRM changes are planned.
+- Next: build isolated, hardlinked copies with private save/config directories, prove the UE4SS hook on this build, and connect observed pawn/puppet transforms to W3. A passing helper test is not the completion gate: the gate requires two real game clients with distinct controlled positions and measured remote bodies on both sides, plus failure checks.
+- Claim: W10 in_progress; no transfer of W5 or W6.
