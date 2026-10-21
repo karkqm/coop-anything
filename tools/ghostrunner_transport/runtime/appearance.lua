@@ -8,6 +8,38 @@ local sequences={idle='ESP_12_pst_Idle',walk='ESP01_pst_Walk_Fwd',run='ESP01_pst
 local blade_path='/Game/Visual/Characters/Hero_Swords/Parts/SK_Katana_Blade.SK_Katana_Blade'
 local handle_path='/Game/Visual/Characters/Hero_Swords/Parts/SK_Katana_Handle.SK_Katana_Handle'
 local source={attack=0}
+local function montage_clip(montage,position)
+    -- Export the actual sequence segment and its phase. A montage name containing
+    -- "att" alone says nothing about which sword swing or pose is playing.
+    if source.clip_montage~=montage:GetFullName() then
+        source.clip_montage=montage:GetFullName()
+        source.segments={}
+        montage.SlotAnimTracks:ForEach(function(_,slot)
+            slot:get().AnimTrack.AnimSegments:ForEach(function(_,entry)
+                local segment=entry:get()
+                local asset=segment.AnimReference
+                if valid(asset) then
+                    local path=asset:GetFullName():match('^AnimSequence (.+)$')
+                    if path and path:find('/Game/Visual/Characters/FFP_View_Models/',1,true)==1 then
+                        local rate=segment.AnimPlayRate
+                        local first,last=segment.AnimStartTime,segment.AnimEndTime
+                        if rate>0 and last>first then
+                            source.segments[#source.segments+1]={clip=path,start=segment.StartPos,
+                                first=first,last=last,rate=rate,loops=segment.LoopingCount}
+                        end
+                    end
+                end
+            end)
+        end)
+    end
+    for _,segment in ipairs(source.segments) do
+        local length=segment.last-segment.first
+        local elapsed=(position-segment.start)*segment.rate
+        if elapsed>=0 and elapsed<length*segment.loops then
+            return segment.clip,segment.first+(elapsed%length),length
+        end
+    end
+end
 function M.capture(pawn)
     local name=pawn:GetFullName()
     if source.name~=name then
@@ -23,6 +55,7 @@ function M.capture(pawn)
         end
     end
     local current,position='',0
+    local clip,phase,duration=nil,nil,nil
     if valid(source.hands) then
         pcall(function()
             local instance=source.hands:GetAnimInstance()
@@ -30,6 +63,7 @@ function M.capture(pawn)
             if valid(montage) then
                 current=montage:GetFullName()
                 position=instance:Montage_GetPosition(montage)
+                clip,phase,duration=montage_clip(montage,position)
             end
         end)
     end
@@ -39,7 +73,8 @@ function M.capture(pawn)
     end
     source.montage,source.montage_position=current,position
     return {mode=pawn.CharacterMovement.MovementMode,attack=source.attack,
-            attacking=attacking,weapon=source.sword and 'katana' or 'none',montage=current}
+            attacking=attacking,weapon=source.sword and 'katana' or 'none',montage=current,
+            clip=clip,phase=phase,duration=duration}
 end
 function M.new(body)
     local self={body=body,weapons={},group=nil,attack=-1,assets={}}
