@@ -351,3 +351,62 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
   capture two frames that visibly show it standing where the external target says, then hand
   the pose contract to the transport lane.
 - Claim: W16 done v1; W17/W18 opened.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W21 PASS: game adapter speaks the file seam
+
+- Did: wrote the game-side adapter in Lua and tested it against a synthetic peer (a Python
+  script that writes `inbox.json` the way the bridge would and reads `outbox.json` back).
+  No second game process and no UDP yet — this isolates the adapter from the transport.
+- Result:
+  - **Lua file IO works** in this build: `io.open`, read/write and `os.rename` are all
+    available inside the mod, so the pose side of the seam can live in the game process.
+  - The adapter publishes our pose at ~20 Hz; the synthetic peer read it back, e.g.
+    `{"world":"/Game/Levels/Tutorial/L_Tutorial_Persistant","epoch":1,"tick":2376,"position":[-19639.27,-66626.54,2078.47],"yaw":-147.55}`.
+  - The adapter drives the spawned puppet from the peer's pose; the puppet followed the
+    peer's circle within the smoothing lag, e.g. peer `(-19895,-67350,2099)` →
+    puppet `(-19920,-67370,2099)`, continuously over dozens of samples.
+- Two real bugs found and fixed while doing this, both worth knowing:
+  1. **`os.rename` on Windows does not replace an existing destination**, so a naive
+     write-then-rename publishes exactly once and then silently fails. Fix: remove the
+     destination and retry the rename; readers tolerate a missing snapshot.
+  2. **World ids do not match between the two sides by default.** `UWorld:GetFullName()`
+     returns `World /Game/Levels/X/X.X`, while the seam contract uses the package path
+     `/Game/Levels/X/X`. Normalise on both publish and receive, or every packet is rejected
+     as a world mismatch (this cost one full run).
+- What this proves: the adapter and the seam contract are compatible in one process pair.
+  What it does not prove: the real UDP bridge, two real game processes, or that a human can
+  see the other player (the avatar is still dressed with a first-person view model).
+- Next: second hardlinked copy with its own UE4SS and its own `-UserDir`, two bridges on
+  loopback, both games in the tutorial, and compare both sides' actual puppet transforms.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W22 PASS: two game processes, closed loop, real UDP
+
+- Did: second hardlinked copy (`<test copy 2>`, 117 hardlinks, own UE4SS) with its own mod
+  variant and its own seam directory; two instances of the third-party bridge
+  (`relay.py host` on `127.0.0.1:27890`, `relay.py client` connecting to it, both with a shared
+  session key from the environment); both games launched windowed at 1024x576.
+- Test shape: each instance moves **its own** pawn slowly in a circle (test-only, so there is
+  motion to share), publishes that pose to its outbox, reads the peer pose from its inbox and
+  drives its spawned puppet to it. That closes the loop through: game A → file A → relay A →
+  UDP → relay B → file B → game B, and back.
+- Result, at the same wall-clock times:
+  - A: `own=(-130,-75,0) puppet=(627,147,0)`
+  - B: `own=(645,143,0) puppet=(-140,-54,0)`
+  A's puppet sits on B's own position and B's puppet sits on A's own position, within one or
+  two samples of lag. Counters over ~75 s: A published 1402 / received 1267; B published 1283 /
+  received 1271. Both processes stayed alive; no crash, no assertion failure in either helper.
+- What this proves: **two real game processes exchange poses over authenticated UDP and each
+  one drives a remote body to the other's position.** That is co-op in the weakest useful
+  sense, and it is the first end-to-end result in this project.
+- What it does not prove, and nobody should claim yet:
+  - it ran in the **main menu world**, not in gameplay. The menu pawns were moved by the test
+    mod, so this is not evidence that real player movement syncs;
+  - the puppet is a bare `SkeletalMeshActor` with **no mesh assigned** in this variant, so it
+    is invisible to a human; there is no visual proof yet;
+  - no interpolation tuning, no interest management, no world/story sync, no disconnect or
+    late-join handling exercised from the game side;
+  - QA level stays `none` until a scripted harness asserts the transforms, and `community-reports`
+    or better until a human actually plays.
+- Next: same loop in the tutorial level with real movement, a visible mesh on the puppet, then a
+  scripted assertion (puppet vs peer's true position within a tolerance over N samples) to move
+  QA from `none` to `automated`.
