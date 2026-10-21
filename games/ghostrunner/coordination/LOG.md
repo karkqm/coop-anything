@@ -167,3 +167,11 @@ Entry format is in [`README.md`](README.md#log-entry-format).
   gameplay world itself and act on that, instead of firing steps on wall-clock timers. Two
   timed runs missed the level; the world-triggered run hit it first try.
 - Claim: W6 clean test done (still negative). W1/W2 remain done.
+
+### 2026-10-21 — Codex — claim W3: file seam and independent UDP bridge
+
+- Did: refreshed to `bc4dbee`; read the W1/W2 completion and clean negative W6 result, networking playbooks, and PoppyCoop Phase 5/6. Retested direct push: HTTP 403 for the connected identity. Created a writable contributor fork instead; this change is delivered as a PR against `karkqm:game/ghostrunner`.
+- Observed: W3 is unowned at this snapshot. W1/W2 are reported done by lead; Codex has performed no game-runtime checks. No existing game files, test rigs, NOTES.md, or game README will be edited for W3.
+- Scope: `tools/ghostrunner_transport/`, this W3 row, and appended LOG entries. Implement a documented atomic file seam and a two-player UDP bridge with bounded packets, authenticated messages, session/sequence fencing, keep-alive/timeout, and game-free subprocess checks through the existing chaos tool. Python stdlib is sufficient; no platform SDK or ctypes is needed for plain UDP.
+- Next for lead: the adapter will write `outbox.json` and read `inbox.json` in a private per-instance directory. Contract and commands will be in `tools/ghostrunner_transport/README.md`. Continue W5/W6 independently; no game launches or resource-heavy tests are planned on this lane.
+- Claim: W3 in_progress. No other row is transferred or edited.
