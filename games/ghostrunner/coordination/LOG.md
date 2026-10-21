@@ -167,3 +167,21 @@ Entry format is in [`README.md`](README.md#log-entry-format).
   gameplay world itself and act on that, instead of firing steps on wall-clock timers. Two
   timed runs missed the level; the world-triggered run hit it first try.
 - Claim: W6 clean test done (still negative). W1/W2 remain done.
+
+### 2026-10-21 — Codex — claim W3: file seam and independent UDP bridge
+
+- Did: refreshed to `bc4dbee`; read the W1/W2 completion and clean negative W6 result, networking playbooks, and PoppyCoop Phase 5/6. Retested direct push: HTTP 403 for the connected identity. Created a writable contributor fork instead; this change is delivered as a PR against `karkqm:game/ghostrunner`.
+- Observed: W3 is unowned at this snapshot. W1/W2 are reported done by lead; Codex has performed no game-runtime checks. No existing game files, test rigs, NOTES.md, or game README will be edited for W3.
+- Scope: `tools/ghostrunner_transport/`, this W3 row, and appended LOG entries. Implement a documented atomic file seam and a two-player UDP bridge with bounded packets, authenticated messages, session/sequence fencing, keep-alive/timeout, and game-free subprocess checks through the existing chaos tool. Python stdlib is sufficient; no platform SDK or ctypes is needed for plain UDP.
+- Next for lead: the adapter will write `outbox.json` and read `inbox.json` in a private per-instance directory. Contract and commands will be in `tools/ghostrunner_transport/README.md`. Continue W5/W6 independently; no game launches or resource-heavy tests are planned on this lane.
+- Claim: W3 in_progress. No other row is transferred or edited.
+
+### 2026-10-21 — Codex — W3 helper delivered; ready for W5 adapter integration
+
+- Did: implemented `tools/ghostrunner_transport/relay.py` (Python 3.8+ stdlib), documented its file/wire contract in that folder's README, and ran `python -I tools/ghostrunner_transport/run_tests.py` on Windows. Delivery: draft PR https://github.com/karkqm/coop-anything/pull/1 against this game's branch. No game process was launched, no game files/config/saves changed, and no NOTES.md/game README edits were made.
+- Observed: **7 tests passed, ALL OK**, including separate helper subprocesses exchanging distinct poses through separate file directories; client crash/restart; host crash/restart; stale, malformed, oversized and nonfinite outboxes; unauthenticated/tampered datagrams; sequence/address/retired-session fencing; and 1000 seeded malformed packets. Chaos used seed 407, 20% base loss, 80 +/- 60 ms one-way delay, 30% reorder, 25% duplication, 5% corruption, and a 1.6-second blackout. Pre-blackout counters in the passing run: c2s 89 seen/21 dropped/15 duplicated; s2c 86 seen/23 dropped/18 duplicated. Both inboxes cleared on timeout and converged after healing. Local artifacts are ignored under `local/ghostrunner-transport-tests/`.
+- Fixes found by testing: Windows `recvfrom` with a small buffer raises WSAEMSGSIZE on oversized UDP; receive the full UDP maximum and then reject by the 1200-byte protocol limit. Windows readers can temporarily prevent atomic replacement; retry pending inbox updates on subsequent ticks, including disconnect notifications.
+- Handoff to W5 owner: per instance, atomically publish a UTF-8 object in `outbox.json`; consume `inbox.json` only if `connected`, non-null `state`, locally fresh `received_at`, and a compatible application world/epoch. The helper sends newest full snapshots, not reliable one-off events. Default 20 Hz, peer timeout 3 s, outbox freshness 2 s. Each pair uses its own environment-provided secret, separate directories, and independent UDP; no platform SDK/credentials. Full commands and constraints are in the tool README.
+- Unknown: UE4SS adapter integration, second-body behavior, interpolation, authority validation, checkpoints, story sync, and two-real-game-client QA. The transport tests establish helper behavior only; Ghostrunner QA remains `none`.
+- Next: review/merge PR #1 into the game branch, connect the W5 adapter to the documented seam, and run a two-real-client pose check before making any gameplay claim. NOTES.md/README.md consolidation stays with lead.
+- Claim: W3 done for the helper scope; W5 and W6 remain with their existing owners/statuses.
