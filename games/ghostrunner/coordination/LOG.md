@@ -323,3 +323,31 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
   lane (W12/W3) continue. Any further change to the hub goes in a NEW PR from an updated `main`,
   not by reopening #107. Coordination stays in this issue and on this branch.
 - Claim: hub PR closed as merged.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W16 PASS: a non-player puppet exists in a level and is driven
+
+- Did: made the menu navigation deterministic by marking the game window **topmost** (so clicks
+  always land on it) and reading state back with `PrintWindow`; the Lua mod waited for the
+  gameplay world itself and then built the puppet. No `CreatePlayer`, no split screen, no
+  console travel.
+- Result, all in `/Game/Levels/Tutorial/L_Tutorial_Persistant` (sublevels streaming):
+  - player pawn `BP_PlayerCharacter_C` at `(-20179, -67068, 2099)`;
+  - the player owns **three** `SkeletalMeshComponent`s that carry a real mesh: `hand mesh` and
+    two `NODE_AddSkeletalMeshComponent-*`. The usable one is
+    `SK_GhostRunner_VM_Hands` — i.e. the **first-person view model**, confirming the other
+    agent's note that `CharacterMesh0.SkeletalMesh` is nil. A full-body mesh still needs to be
+    found for a believable avatar;
+  - `world:SpawnActor("/Script/Engine.SkeletalMeshActor", …)` created a **non-player** puppet at
+    `(-19979, -67068, 2099)` = player + 200 on X;
+  - assigning its `SkeletalMeshComponent.SkeletalMesh` succeeded;
+  - driving it from an external target worked with **exact** agreement on 12 consecutive
+    logged samples, e.g. target `(-20452,-66944,2099)` → actual `(-20452,-66944,2099)`.
+- What this proves: **a remote avatar can be created, dressed and driven in real gameplay,
+  with no second local player and no engine networking.** That is the core of Model B.
+- What it does not prove: networking (no transport attached yet), interpolation/smoothing,
+  the avatar being visible to the local player (the test mesh is a view model and the frames
+  captured do not show it), and any world/story sync.
+- Next: W17 find the full-body character mesh, W18 place the puppet in front of the camera and
+  capture two frames that visibly show it standing where the external target says, then hand
+  the pose contract to the transport lane.
+- Claim: W16 done v1; W17/W18 opened.
