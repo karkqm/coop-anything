@@ -681,3 +681,43 @@ through the game's UI flow.
 Conclusion recorded in NEXT-STEPS with three options: UI click emulation (possible, uncertain, slow),
 an OS-level click on the test-copy window only (needs owner permission, takes focus briefly), or the
 owner pressing Continue once per session (zero risk, ~5 s). Recommendation: the third for now.
+
+### 2026-10-22 — lead (deepseek) — W37: installer/launcher now install the combat module with a role
+
+- `install.ps1` gained `-Fight`, `-Role host|client`, `-SkipIntro` and `-Force`. With `-Fight` it
+  writes the combat module into `Mods\CoopFight\Scripts\main.lua` with `PAIR`, `ROLE` and
+  `NET_DIR` substituted, enables `CoopFight : 1` and disables `GhostrunnerSync`; `-SkipIntro`
+  renames the loose `Content\Movies\SplashScreen.mp4` to `.bak` in that copy (nothing is deleted);
+  `-Force` allows reinstalling over an existing loader, and the plain re-run now fails with a
+  message that names `-Force`.
+- `coop-ui.ps1` got two checkboxes ("Shared combat (enemies + marker)", "Skip intro movie") and
+  the Install button now passes the selected Host/Join role through, so the same window sets up
+  both sides correctly.
+- Verified on throwaway copies: host/A and client/B installs produce the right
+  `PAIR`/`ROLE`/`NET_DIR` lines, `mods.txt` toggles correctly, re-install without `-Force` is
+  refused, re-install with `-Force` succeeds, and both scripts parse cleanly.
+- Also measured: with the splash movie disabled the main menu appears in ~2.5 s instead of ~6 s,
+  which shortens every test loop.
+
+Separately: confirmed from the modding community that custom maps are still unavailable
+(GR_Guides lists them as "coming soon"; they are authored as paks via the UE editor), so a
+hand-made test map is not a shortcut. Console automation is also out: verified that
+`KismetSystemLibrary:ExecuteConsoleCommand` reports success but does not execute (`quit` does not
+quit), so the UUU console-unlocker route cannot be driven from Lua either.
+
+### 2026-10-22 — lead (deepseek) — W38 PASS: full UX pipeline installs and connects with roles
+
+Ran the real pipeline exactly as a player would: `install.ps1 -Fight -Role host|client -SkipIntro`,
+then both bridges and both game copies.
+
+- A installed as `host`, B as `client`; both reports showed the right module and intro state.
+- Both mods loaded with the baked role (boot log `role=host` / `role=client`), the avatar and its
+  green marker spawned, and the seam showed `connected=true` with `seq` 463/464 on both sides
+  within ~20 s of launch.
+- This closes the UX item: one window installs the combat module with the correct role, starts the
+  bridge and the game, and shows the connection state without a terminal.
+
+Remaining for the whole co-op objective: verifying a **real sword kill** (all death tests so far
+destroyed enemies programmatically) and, beyond the current scope, shared health for multi-phase
+bosses. Both are blocked only by entering a level, which needs either one owner click or the
+owner's permission for a synthetic click on the test-copy window.
