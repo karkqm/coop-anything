@@ -305,3 +305,21 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
   deterministic: mark the game window topmost so clicks always land, read state back with
   `PrintWindow`), then spawn the puppet in-level, give it the player's mesh, drive it, and
   capture two frames that show it standing where the external target says.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — hub PR #107 MERGED as 5c6c58b
+
+- Result: the Ghostrunner directory entry and write-up are in the hub. Maintainer note:
+  "Merged as 5c6c58b, thanks! (merged by hand because of directory conflicts)" — i.e. the
+  `DIRECTORY.md` row was applied manually against a moved `main`, so a later rebase of this
+  branch would conflict on that file. Do not rebase `game/ghostrunner` blindly onto the new
+  `main`; take the upstream `DIRECTORY.md` and regenerate.
+- Confirmed upstream: `games/ghostrunner/NOTES.md` and `games/ghostrunner/README.md` exist on
+  `main`, and the generated directory contains the Ghostrunner row.
+- What the write-up now claims publicly, and what it does not: engine 4.26, UE4SS v3.0.1 hook
+  proven, engine networking present but the native route closed with four negatives, the real
+  pawn and its standard movement component identified, and a puppet primitive proven. QA level
+  is still `none` and the write-up says so.
+- Next: the puppet lane (W11 now unblocked via `world:SpawnActor`) and the transport/integration
+  lane (W12/W3) continue. Any further change to the hub goes in a NEW PR from an updated `main`,
+  not by reopening #107. Coordination stays in this issue and on this branch.
+- Claim: hub PR closed as merged.
