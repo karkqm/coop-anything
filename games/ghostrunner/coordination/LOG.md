@@ -668,3 +668,16 @@ same benefit (no human in the loop, deterministic) without touching the pak form
 Next: (1) get `TryNavigate`'s parameters / invoke `OnButtonClicked`, (2) if that fails, ask the owner
 whether OS-level input on a dedicated test-copy window is acceptable as the last resort, and
 (3) once entry is automatic, move on to event synchronization.
+
+### 2026-10-22 — lead (deepseek) — W36: auto-entry exhausted; all non-input paths blocked
+
+Added the second round of auto-entry attempts on the GOG build: `-map=` argument, `-ExecCmds="open ..."`,
+`KismetSystemLibrary:ExecuteConsoleCommand` with `open`/`travel`/`?listen`, `PlayerController:ClientTravel`,
+and a full argument matrix for `ButtonOML:TryNavigate`. Console commands report success but never change
+the world; `ClientTravel` and `ServerTravel` raise Lua errors; `TryNavigate` only navigates UI panels
+(it accepts one argument and returns the target object). Level entry on this build is routed exclusively
+through the game's UI flow.
+
+Conclusion recorded in NEXT-STEPS with three options: UI click emulation (possible, uncertain, slow),
+an OS-level click on the test-copy window only (needs owner permission, takes focus briefly), or the
+owner pressing Continue once per session (zero risk, ~5 s). Recommendation: the third for now.

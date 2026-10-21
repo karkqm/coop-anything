@@ -94,3 +94,35 @@ with the existing rig and would remove surprises in the first real two-machine s
   direction both produced false FAILs before the sync was touched.
 - Never drive the UI by wall-clock timers: act on game state. Never send keystrokes to a window you
   cannot prove is focused.
+
+## Auto-entry: exhausted, a decision is needed (2026-10-22)
+
+Every non-input path to load a level on the GOG build has now been tried and failed:
+
+| Approach | Outcome |
+|---|---|
+| positional map argument | ignored, boots to MainMenu |
+| `-map=/Game/...` | ignored |
+| `-ExecCmds="open /Game/..."` | ignored |
+| `APlayerController:ConsoleCommand` | not callable from Lua |
+| `KismetSystemLibrary:ExecuteConsoleCommand("open ...")` | runs, world unchanged |
+| `KismetSystemLibrary:ExecuteConsoleCommand("travel ...")` | runs, world unchanged |
+| `UWorld:ServerTravel` | errors |
+| `APlayerController:ClientTravel` | errors |
+| `UGameplayStatics:OpenLevel` | crashes the game |
+| menu panel functions | only `RefreshSubMenuPosition` exists on this build |
+| function lookup by 24 candidate names | no hits |
+| `ButtonOML:TryNavigate` | works only as UI navigation (needs an argument, returns the target); does not load a level |
+
+The level entry is routed exclusively through the game's own UI flow. Two realistic options remain:
+
+1. **UI click emulation** - the widget tree is readable and `ButtonOML` has `TryNavigate`; a chain
+   of button activations could reach "Continue". Uncertain and slow, and it still has to make the
+   game's Blueprint flow call the level loading.
+2. **OS-level click on the dedicated test-copy window only** - reliable, but needs the owner's
+   explicit permission (it takes focus briefly). The owner has previously asked not to inject input
+   into the game; this was asked again and no answer has arrived yet.
+3. **Owner presses Continue once per test session** - zero risk, costs the owner ~5 seconds.
+
+Recommendation: option 3 for now (it unblocks everything immediately), option 2 if the owner agrees
+and long unattended runs become necessary.
