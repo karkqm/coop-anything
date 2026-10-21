@@ -250,6 +250,18 @@ class ProcessTests(unittest.TestCase):
         self.bridge("client", port)
         self.converge()
 
+    def test_lua_staged_outbox_is_adopted_atomically(self):
+        self.bridge("host")
+        port=read_json(self.work / "host" / "ready.json")["bind"][1]
+        self.bridge("client", port)
+        self.converge(1)
+        expected={"world":"tutorial","position":[456,789,123],"tick":900}
+        staged=self.work / "host" / "outbox.next.json"
+        wait_for(lambda: relay.atomic_json(staged,expected),seconds=1)
+        wait_for(lambda: self.received("client",expected))
+        self.assertEqual(read_json(self.work / "host" / "outbox.json"),expected)
+        self.assertFalse(staged.exists())
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)

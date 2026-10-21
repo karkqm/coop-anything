@@ -9,9 +9,10 @@ game A -> A/outbox.json -> helper A == UDP == helper B -> B/inbox.json -> game B
 game A <- A/inbox.json  <- helper A == UDP == helper B <- B/outbox.json <- game B
 ```
 
-W3 is implemented and checked without game clients. **No Ghostrunner integration or
-playable co-op is claimed.** The game adapter, second body, interpolation, authority,
-checkpoint/respawn behavior, and story synchronization remain separate work.
+The W3 helper is implemented and checked without game clients. A separate
+[runtime adapter prototype](runtime/README.md) now has two-real-client avatar checks
+on the Steam build. Campaign authority, checkpoint/respawn behavior, and story
+synchronization remain separate work; playable campaign co-op is not claimed.
 
 ## Run two helpers
 
@@ -60,6 +61,11 @@ The adapter owns **outbox.json**. Publish a complete UTF-8 JSON object regularly
 the outbox. Retry a rename on the next game tick if Windows reports a sharing error.
 Do not rewrite the visible outbox in place. Use a temporary name other than the
 helper's reserved `<filename>.tmp` names.
+
+Windows Lua producers can instead rename the complete file to `outbox.next.json`.
+Only publish when that staging name is absent. The helper atomically replaces
+`outbox.json` from the staging file before reading; no shell process or non-atomic
+delete/replace is needed inside the game. The ordinary outbox contract still works.
 
 Example payload, **not an implemented game schema**:
 

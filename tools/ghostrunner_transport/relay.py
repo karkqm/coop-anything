@@ -77,6 +77,12 @@ def atomic_json(path, value):
 
 
 def read_state(path, max_age):
+    # Lua on Windows cannot rename over an existing destination. A producer may
+    # instead hand off one complete outbox.next.json; this process owns adoption.
+    try:
+        os.replace(str(path.with_name("outbox.next.json")), str(path))
+    except OSError:
+        pass
     try:
         with path.open("rb") as stream:
             stat = os.fstat(stream.fileno())
