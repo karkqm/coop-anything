@@ -600,3 +600,29 @@ re-tested.
   does not yet prove a real **sword kill** is detected: that needs one run where a human kills an
   enemy, which is the next check. Shared health/damage is not implemented; for one-hit-kill enemies
   a death event is the whole gameplay-relevant state, for bosses it is not.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W34 PASS: host-authoritative death sync both ways
+
+- Implemented an explicit authority split (CoopFight v5):
+  - **host** owns enemy liveness: it publishes authoritative kill positions, and it validates
+    client claims — a claim whose enemy is still alive on the host is accepted (host destroys it
+    and publishes the kill), otherwise it is logged as ignored;
+  - **client** never publishes authoritative deaths: it reports its observations as claims and
+    applies kills that arrive from the host.
+- Verified on two real processes in the tutorial level:
+  - client destroys `BP_EnemyShooterPistol14` → host: `claim accepted BP_EnemyShooterPistol14 d=0.0`;
+  - host destroys `BP_EnemyShooterPistol15` → client: `host kill applied ...15 d=0.1`.
+  Both directions work, matching at essentially zero distance.
+- Bug found by this test: the kill/claim queues were never pruned, so a burst of streaming events
+  filled them permanently and later real kills were dropped. Entries now carry their tick, only
+  the last ~3 s are published (retransmission window) and older ones are pruned.
+- Also fixed in this lane: the avatar and its glowing marker were not re-created after a world
+  change (references were stale), and the avatar's marker light spawns correctly inside the level
+  now (`marker light spawned` right after the level entry). A captured frame shows the remote
+  avatar rendered in front of the other player's camera.
+- Still unverified, and the last gap for the death path: a **real sword kill**. Everything so far
+  destroyed enemies programmatically through the test hook. Pending-kill detection itself is
+  verified separately, so the remaining risk is small but not zero.
+- Not implemented: shared health/damage. Ghostrunner's regular enemies die in one hit, so a death
+  event carries all the gameplay-relevant state for them; bosses with health phases would need
+  real HP sync, which this lane does not claim.
