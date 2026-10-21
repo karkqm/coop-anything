@@ -462,3 +462,33 @@ Crash budget so far on the GOG copy: two dumps, both deliberate and understood �
   and a Russian README that states the verified/unverified split honestly.
 - Next: two-machine run if a second PC is available; otherwise keep the single-machine
   two-process rig as the reference and stop claiming more than it shows.
+
+### 2026-10-21 — lead (deepseek, session 2026-10-21) — W29: network impairment and disconnect tests PASS; kit validated
+
+- Did: put a chaos proxy between the two bridges (`tools/chaos`, profiles `bad_wifi` and `hell`,
+  RPC control), verified with a multi-direction mover, then triggered a total 4 s disconnect and
+  watched both sides.
+- Result:
+  - `bad_wifi` (2% loss, 35±25 ms, reorder 2%, dup 0.5%): **PASS** — travel 321 and 908,
+    avatar-vs-expected p95 **0.0**, transport p95 66/86 units.
+  - `hell` (8% loss with bursts, 200±150 ms, reorder 10%, dup 5%, 512 kbit/s cap): **PASS** —
+    travel 1017 and 1093, avatar-vs-expected p95 **0.0**, transport median 67 ms.
+  - 4 s total outage: **PASS** — both avatars hid during the outage and sync recovered without
+    restarting either game.
+- Kit validated from scratch: fresh 117-hardlink copy, `install.ps1` (UE4SS hash-checked) +
+  `GhostrunnerSync` + `config.lua`, game launched and the adapter reported the world. The
+  installer's "another loader already present" guard also fired correctly on a copy that was
+  already installed.
+- Two practical findings for the kit:
+  1. **PowerShell script execution is disabled by default on this machine**, so `.ps1` files do
+     not run by double-click or from a prompt; added `install.cmd` / `run.cmd` wrappers that
+     invoke them with `-ExecutionPolicy Bypass`.
+  2. **Connecting to the machine's own LAN IP is blocked by Windows Firewall** (traffic to own
+     external address arrives as inbound on the interface; no rule for python.exe). Loopback
+     works, which is why the earlier runs passed. For a real two-machine run either allow
+     inbound UDP for the bridge or use a VPN overlay — documented in the kit README.
+- Also fixed two bugs in my own verifier: it must continue the QA command ids from the adapter's
+  last `qa_id` (stale ids are ignored), and it must try several directions because a player can
+  be standing against geometry.
+- Next: the only unverified path left is two physical machines; everything else (sync, avatar,
+  impairment, recovery, install) now has a repeatable PASS.
