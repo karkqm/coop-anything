@@ -12,9 +12,10 @@ split the viewport, or change the owner's original install/profile. All engine
 calls execute on the game thread. Snapshot contents never execute as commands.
 
 The remote body currently uses the game's loaded `Enemy_Pistol_01` humanoid as a
-temporary avatar. Compatible stock idle/walk/run/air/attack animations play on its
-mesh. The player's katana blade and handle are separate runtime actors attached to
-the actual `hand_r` bone; their positions follow evaluated animation poses. This is
+temporary avatar. Stock locomotion drives its lower body; a poseable copy retargets
+the player's actual sword clips onto the clavicles, arms and hands at the source
+animation phase. Katana blade and handle follow the evaluated `hand_r` bone and the
+original animated weapon-socket grip. This is
 a proxy of the player's movement/action state, not an exact Jack full-body animation
 set. No game assets are distributed.
 
@@ -68,8 +69,9 @@ Game-window captures from both clients were inspected: a complete humanoid and i
 katana are visible, with posed arms rather than a horizontal bind pose. The earlier
 pistol firing clip was an incorrect melee substitute. The new
 [sword correction](ATTACK_FIX.md) retargets the player's actual sword animations and
-has separate real-client slash and mutation checks; its broader reruns and rendered
-inspection are pending. A dedicated Jack body remains unverified. Integration is manual; no standalone
+has separate real-client slash and mutation checks. Its pair/movement reruns passed,
+and recorded frames from both game windows were inspected. See that page for the
+current run counts. A dedicated Jack body remains unverified. Integration is manual; no standalone
 installer or launcher is provided yet.
 
 The helper suite now has 8 passing tests, including Lua staged-file adoption.

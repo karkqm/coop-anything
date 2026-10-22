@@ -385,3 +385,39 @@ UNKNOWN / not implemented: Steam/GOG interoperability, dedicated Jack full-body
 animations, campaign/world authority, enemies/damage/checkpoints/saves, level travel
 and respawn synchronization. Manual integration only; no standalone launcher yet.
 These are avatar synchronization checks, not proof of playable campaign co-op.
+
+## Remote katana correction (2026-10-22, Steam rig)
+
+OBSERVED: the owner caught that the prior remote "attack" used the pistol firing
+sequence `ESP_12_pst_Attack1`. The old animation-entry assertion did not prove a
+katana slash. That substitution and its visual-melee claim are withdrawn.
+
+The receiver now retargets the actual player sword sequence/phase onto a poseable
+copy of the temporary body. Reference-pose corrections cover clavicles, upper arms,
+forearms and hands, preserving target bone lengths and lower-body locomotion.
+The grip uses the player's animated weapon socket relative to its hand rather than
+copying a socket-relative rotation directly onto the unrelated body's hand bone.
+No player asset/component is modified; the source remains at player index zero.
+Code and detailed checks: [sword correction](../../tools/ghostrunner_transport/runtime/ATTACK_FIX.md).
+
+Actually run on the same Steam build/hash recorded above:
+
+- Real melee from each of two clients, repeated twice, passed the dedicated sword
+  oracle under 10% loss/delay/reorder: 5/6/6/7 distinct evaluated attack poses. It
+  checks actual player clip/clock, hand travel, blade-tip sweep, blade length,
+  visible unit-scale parts and grip. Old-pistol/static-blade scorer controls fail.
+- Freezing the receiver's actual sword pose in the opt-in QA bot caused the clock
+  and slash-arc checks to fail; restoring it passed. Both returned to idle.
+- Integrated game-window video from both clients was inspected across frames;
+  the remote hand and blade swing. Pair suite passed 9 gates, including a real
+  disabled-receive mutation and blackout/recovery, with 3 actual dropped packets.
+  Motion suite passed both sources (945/906 cm, 7 matched moving snapshots each).
+  Helper suite passed 8 tests.
+
+UNKNOWN: whether the complete shipped asset set contains a usable full-body Jack.
+The inspected player has an empty CharacterMesh0 and a separate first-person hands
+mesh. A full asset-registry query through the Lua interface ended the isolated
+test process without a completed result; it is not evidence of absence and is not
+part of the adapter. The community [Ghost Mod](https://github.com/Dmgvol/Ghostrunner-Mods/blob/main/LogicMods/GhostMod/ghostmod.md)
+also uses Kevin for its ghost, but that does not establish that Jack cannot be used.
+The body remains a temporary proxy; campaign/world/respawn synchronization is unproven.

@@ -27,8 +27,13 @@ negative controls were rejected. Freezing the actual receiver pose through a loc
 QA mutation failed the clock and slash-arc checks; restoring it passed again.
 Both avatars then returned to idle and converged.
 
-Rendered prototype frames show the arm and katana swing. Rendered inspection after
-production integration and broader pair/movement reruns are still pending.
+The integrated version was recorded in both actual game windows and the frame
+sequences inspected: the remote hand and katana swing and return to the sword idle.
+The repeat slash verifier also passed under the pair test's 10% loss/delay/reorder
+profile (5/6/6/7 evaluated poses), including the real frozen-pose negative control.
+The broader pair suite passed all 9 gates, with 3 actual drops before blackout;
+motion checks passed for both sources (945/906 cm, 7 matched moving snapshots each).
+The independent helper suite passed all 8 tests.
 
 Useful reflection detail for DEEPSEEK FRIEND: `Actor:GetTransform()` returns a
 transform table here; `K2_GetActorTransform()` does not. Creating a poseable component

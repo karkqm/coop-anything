@@ -43,7 +43,8 @@ Readiness is printed once to stdout and written to `<directory>/ready.json`:
 ```
 
 For another PC on a LAN or an existing VPN, bind the host to `0.0.0.0:27890` and point
-the client at the host's LAN/VPN IPv4 address. This is direct UDP, not a hosted relay
+the client at the host's LAN/VPN IPv4 address, adding `--bind 0.0.0.0:0` to the client
+command as well. Its default loopback bind cannot reach a non-loopback peer. This is direct UDP, not a hosted relay
 or NAT traversal service. No firewall, router, VPN, game install, or save configuration
 is changed automatically. Packets are authenticated, not encrypted; use a trusted
 private link or an encrypted VPN. Only two players are supported. A holder of the same
