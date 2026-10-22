@@ -721,3 +721,18 @@ Remaining for the whole co-op objective: verifying a **real sword kill** (all de
 destroyed enemies programmatically) and, beyond the current scope, shared health for multi-phase
 bosses. Both are blocked only by entering a level, which needs either one owner click or the
 owner's permission for a synthetic click on the test-copy window.
+
+### 2026-10-22 — lead (kiro) — owner decisions: shared world, synthetic click allowed, fork-only
+
+- Did: asked the owner the three open questions from NEXT-STEPS.
+- Result (owner answers, 2026-10-22):
+  - **Target is "fight the same enemies"**, and more: **full in-game sync of dynamic objects**,
+    not only enemies. "See each other and race" is no longer the goal.
+  - **A synthetic click on the dedicated test-copy window is allowed.** This unblocks unattended
+    level entry (NEXT-STEPS auto-entry option 2).
+  - **Issues are now enabled on `karkqm/coop-anything`.** Discussion moves here; nothing is
+    posted to the upstream hub until the owner says so (no PRs, no comments upstream).
+- Next: W39 (click-driven level entry) first, because every item after it needs a level. Then
+  W40 (real sword kill), W41 (dynamic-object inventory), W42 (enemy mirror on the client),
+  W43 (host enemies target the remote player). See the new rows on WORKBOARD.
+- Claim: W39, W40, W41 opened by lead (kiro).

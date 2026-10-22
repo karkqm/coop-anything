@@ -126,3 +126,21 @@ The level entry is routed exclusively through the game's own UI flow. Two realis
 
 Recommendation: option 3 for now (it unblocks everything immediately), option 2 if the owner agrees
 and long unattended runs become necessary.
+
+## Owner decisions 2026-10-22 — the plan from here
+
+Target: **fight the same enemies, with every dynamic object in sync.** The host is the single
+authority for the world; the client shows the host's world and sends its own actions as claims.
+Synthetic clicks on the test-copy window are allowed, so tests can run without a human.
+Discussion lives in this fork (issues enabled); nothing goes upstream for now.
+
+| Order | Item | Why it is in this place |
+|---|---|---|
+| 1 | W39 unattended level entry (click) | every test below needs a level |
+| 2 | W40 real sword kill | closes the death path already built |
+| 3 | W41 dynamic-object inventory | decides what "full sync" means in numbers |
+| 4 | W42 enemy mirror on the client | one authority for enemy position, state, attacks |
+| 5 | W43 host enemies target the remote player | without it only one player is in danger |
+| 6 | projectiles, doors, switches, platforms, checkpoints (from W41) | one class at a time, each with a test |
+| 7 | remote katana animation (PR #1 lane) and Jack's body (W17) | looks, after the world is shared |
+| 8 | two-PC test | real latency |
