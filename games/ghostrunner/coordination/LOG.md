@@ -736,3 +736,28 @@ owner's permission for a synthetic click on the test-copy window.
   W40 (real sword kill), W41 (dynamic-object inventory), W42 (enemy mirror on the client),
   W43 (host enemies target the remote player). See the new rows on WORKBOARD.
 - Claim: W39, W40, W41 opened by lead (kiro).
+
+
+### 2026-10-23 - lead (kiro) - W39 PASS (unattended level entry) and W41 done (dynamic-object inventory)
+
+Checked on GOG build, copy A (`A:\CoopTest\Ghostrunner3`).
+
+- Did (W39): ran `tools/grdebug/enter_continue.py` against a fresh copy. The first run stalled:
+  GrDebug reported `menu=visible|submenu` while the screen showed only the tab bar, so the script
+  skipped opening the submenu and clicked empty space. The copy was running an **old GrDebug**
+  that tested `BtnContinue:IsVisible()` (always true). Installed the current one (it tests the
+  `VBoxButtonsGR` opacity) into copies A and B.
+- Result (W39): **10/10 cold launches into `L_Tutorial_Persistant` with `BP_PlayerCharacter_C`,
+  no human input, ~24 s each** (`w39_soak.py A 10`, log `evidence-W39-soak-A.log`). Run 1 needed
+  the built-in second Continue click. The flow moves the real cursor and takes focus for <1 s.
+- Did (W41): `probes/w41_actors.lua` counted every actor class in the level; `w41_props_run.py`
+  dumped Blueprint-declared state per gameplay class, one class per call.
+- Result (W41): `W41-INVENTORY.md`. Key points: enemy activation is trigger-driven
+  (`BP_TriggerSwitchEnemiesLogicOn_C.EnemiesList`); door/checkpoint/access-point logic hangs off
+  kills (`BP_Group_Killed_C`), so if only the host kills, only the host must run it; Checkpoint,
+  Grapling_Point and Teleport each hold a single `Player Character` ref. 11 classes need a
+  reliable event channel.
+- Dead end: UE4SS `ForEachProperty` + reading a **struct/delegate** property value **crashes**
+  this build (process gone, no log line). Read only simple types.
+- Next: W42 (client enemies follow host), then W40 with a real sword hit. Ask usav12 for the
+  reliable event channel (acks, resend) on the transport.
