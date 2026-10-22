@@ -65,7 +65,7 @@ def check_source(pair, index):
         assert appearance['weapon_visible'] and len(appearance['weapons'])==2
         for weapon in appearance['weapons']:
             assert not weapon['hidden'] and weapon['socket']=='hand_r'
-            assert math.dist(weapon['position'],appearance['hand'])<6,'katana detached during locomotion'
+            assert math.dist(weapon['position'],appearance['sword']['expected_grip'])<1,'katana detached during locomotion'
     before=last[index].get('local_motion',{}).get('attack',0)
     pair.command(index,'attack')
     attack_samples=[]

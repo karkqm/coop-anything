@@ -76,7 +76,7 @@ local function spawn(world,pose)
     body.Mesh:SetVisibility(true,true)
     body.Mesh:SetHiddenInGame(false,true)
     body.Mesh.VisibilityBasedAnimTickOption=0
-    state.visual=appearance.new(body)
+    state.visual=appearance.new(body,config)
     log('spawned remote avatar '..body:GetFullName())
     return body
 end

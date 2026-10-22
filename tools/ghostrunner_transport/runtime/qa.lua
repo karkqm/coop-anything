@@ -58,6 +58,9 @@ function M.new(json,directory)
             elseif command.action=='mutation' and type(command.drop_receive)=='boolean' then
                 config.mutation_drop_receive=command.drop_receive
                 self.id=command.id
+            elseif command.action=='mutation' and type(command.freeze_sword)=='boolean' then
+                config.mutation_freeze_sword=command.freeze_sword
+                self.id=command.id
             end
         end
         if self.hold then

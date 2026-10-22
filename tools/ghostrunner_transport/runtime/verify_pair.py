@@ -72,10 +72,10 @@ def score(a, b, expected):
         for weapon in weapons:
             if weapon.get('hidden') is not False or weapon.get('socket')!='hand_r':
                 errors.append(label + ': weapon is hidden or attached to the wrong socket')
-            hand=appearance.get('hand')
+            hand=(appearance.get('sword') or {}).get('expected_grip')
             wp=weapon.get('position')
-            if not hand or not wp or math.dist(hand,wp)>6:
-                errors.append(label + ': weapon is not following the actual hand bone')
+            if not hand or not wp or math.dist(hand,wp)>1:
+                errors.append(label + ': weapon differs from the evaluated hand/socket grip')
     if near(a.get('local_position'), b.get('local_position')):
         errors.append('source poses must be distinct')
     return errors
@@ -188,8 +188,11 @@ class Pair:
             pair = wait(good)
         if not all(p['tick'] > old for p, old in zip(pair, ticks)):
             raise AssertionError('game observation streams stopped advancing')
-        if not all(abs(p['appearance']['position']-old)>0.001 for p,old in zip(pair,animation_times)):
-            raise AssertionError('remote animation time is not advancing')
+        def advancing():
+            value=good()
+            return value if value and all(abs(p['appearance']['position']-old)>0.001
+                for p,old in zip(value,animation_times)) else None
+        pair=wait(advancing)
         return pair
 
 

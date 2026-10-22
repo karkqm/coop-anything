@@ -20,7 +20,7 @@ set. No game assets are distributed.
 
 ## Files and manual integration
 
-Copy `main.lua`, `json.lua`, `appearance.lua`, and optionally `qa.lua` into a private
+Copy `main.lua`, `json.lua`, `appearance.lua`, `sword_pose.lua`, and optionally `qa.lua` into a private
 test copy's `Mods/GhostrunnerSync/Scripts/` folder. Copy `config.example.lua` to
 `config.lua` there and set `directory` to that instance's private transport folder.
 Enable `GhostrunnerSync : 1` in that copy's `Mods/mods.txt`. Keep `qa=false` for normal
@@ -51,6 +51,7 @@ five-second blackout and recovery without restarting the games.
 ```powershell
 python -I tools/ghostrunner_transport/runtime/verify_pair.py --a-dir <net-A> --b-dir <net-B> --pid-a <PID-A> --pid-b <PID-B> --chaos-info <chaos-info.json> --output local/pair-check
 python -I tools/ghostrunner_transport/runtime/verify_motion.py --a-dir <net-A> --b-dir <net-B> --pid-a <PID-A> --pid-b <PID-B> --output local/motion-check
+python -I tools/ghostrunner_transport/runtime/verify_sword.py --a-dir <net-A> --b-dir <net-B> --pid-a <PID-A> --pid-b <PID-B> --output local/sword-check
 ```
 
 The passing pair run reached 9 gates, including the floor/capsule fixture checks;
@@ -64,9 +65,11 @@ actions reached the observer animation. Matching uses the source snapshot actual
 received, since the source's newer state can differ during transport delay.
 
 Game-window captures from both clients were inspected: a complete humanoid and its
-katana are visible, with posed arms rather than a horizontal bind pose. The temporary
-avatar still uses the enemy's stock poses, including its aimed idle; a dedicated Jack
-body and sword animations are future work. Integration is manual; no standalone
+katana are visible, with posed arms rather than a horizontal bind pose. The earlier
+pistol firing clip was an incorrect melee substitute. The new
+[sword correction](ATTACK_FIX.md) retargets the player's actual sword animations and
+has separate real-client slash and mutation checks; its broader reruns and rendered
+inspection are pending. A dedicated Jack body remains unverified. Integration is manual; no standalone
 installer or launcher is provided yet.
 
 The helper suite now has 8 passing tests, including Lua staged-file adoption.

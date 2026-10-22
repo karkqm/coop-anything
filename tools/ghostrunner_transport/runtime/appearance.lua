@@ -1,10 +1,11 @@
 -- Runtime-only visual representation using assets already loaded by the game.
 local M={}
+local sword_pose=require('sword_pose')
 local function valid(o) return o and o:IsValid() end
 local function xyz(v) return {v.X,v.Y,v.Z} end
 local sequence_root='/Game/Visual/Characters/Enemy_Pistol_01/Animations/'
 local sequences={idle='ESP_12_pst_Idle',walk='ESP01_pst_Walk_Fwd',run='ESP01_pst_Sprint_Fwd',
-                 air='ESP07_pst_jump_away_R',attack='ESP_12_pst_Attack1'}
+                 air='ESP07_pst_jump_away_R'}
 local blade_path='/Game/Visual/Characters/Hero_Swords/Parts/SK_Katana_Blade.SK_Katana_Blade'
 local handle_path='/Game/Visual/Characters/Hero_Swords/Parts/SK_Katana_Handle.SK_Katana_Handle'
 local source={attack=0}
@@ -76,7 +77,7 @@ function M.capture(pawn)
             attacking=attacking,weapon=source.sword and 'katana' or 'none',montage=current,
             clip=clip,phase=phase,duration=duration}
 end
-function M.new(body)
+function M.new(body,config)
     local self={body=body,weapons={},group=nil,attack=-1,assets={}}
     for group,name in pairs(sequences) do
         local asset=StaticFindObject(sequence_root..name..'.'..name)
@@ -95,6 +96,8 @@ function M.new(body)
         actor.SkeletalMeshComponent:SetMobility(2)
         actor.SkeletalMeshComponent:SetSimulatePhysics(false)
         actor.SkeletalMeshComponent:SetSkeletalMesh(mesh,true)
+        actor.SkeletalMeshComponent.VisibilityBasedAnimTickOption=0
+        actor.SkeletalMeshComponent.bUseAttachParentBound=true
         actor:K2_AttachToComponent(body.Mesh,FName('hand_r'),2,2,2,false)
         local parent=actor.SkeletalMeshComponent:GetAttachParent()
         assert(valid(parent) and parent:GetFullName()==body.Mesh:GetFullName(),'weapon attach failed')
@@ -102,7 +105,10 @@ function M.new(body)
         actor.SkeletalMeshComponent:K2_SetRelativeRotation({Pitch=0,Yaw=-180,Roll=-90},false,{},true)
         return actor
     end
-    local ok,problem=pcall(function() weapon(handle_path); weapon(blade_path) end)
+    local ok,problem=pcall(function()
+        weapon(handle_path); weapon(blade_path)
+        self.sword=sword_pose.new(body,config)
+    end)
     if not ok then
         for _,actor in ipairs(self.weapons) do if valid(actor) then actor:K2_DestroyActor() end end
         error(problem)
@@ -113,6 +119,7 @@ function M.new(body)
         end
     end
     function self:destroy()
+        if self.sword then self.sword:destroy();self.sword=nil end
         for _,actor in ipairs(self.weapons) do
             if valid(actor) then actor:K2_DestroyActor() end
         end
@@ -128,9 +135,8 @@ function M.new(body)
         local speed=math.sqrt(peer.velocity[1]^2+peer.velocity[2]^2)
         local group=speed>550 and 'run' or speed>20 and 'walk' or 'idle'
         if motion.mode==3 and self.assets.air then group='air' end
-        if motion.attacking and self.assets.attack then group='attack' end
-        if group~=self.group or (group=='attack' and motion.attack~=self.attack) then
-            body.Mesh:PlayAnimation(self.assets[group],group~='attack')
+        if group~=self.group then
+            body.Mesh:PlayAnimation(self.assets[group],true)
             self.group=group
         end
         local rate=1
@@ -138,22 +144,27 @@ function M.new(body)
         if group=='run' then rate=math.max(0.5,math.min(2.5,speed/600)) end
         body.Mesh:SetPlayRate(rate)
         self.attack=motion.attack
+        self.sword:update(peer,self.weapons)
         self:hide(motion.weapon=='none')
         self.weapon_visible=motion.weapon~='none'
     end
     function self:probe()
-        local result={group=self.group or 'none',playing=body.Mesh:IsPlaying(),position=body.Mesh:GetPosition(),
+        local posed=self.sword.ready and self.sword.mesh or body.Mesh
+        local result={group=self.sword.active and 'attack' or self.group or 'none',base_group=self.group,
+            playing=body.Mesh:IsPlaying(),position=body.Mesh:GetPosition(),sword=self.sword:probe(),
             weapon_visible=self.weapon_visible==true,weapon_count=#self.weapons,
-            hand=xyz(body.Mesh:GetSocketLocation(FName('hand_r'))),bones={}}
+            hand=xyz(posed:GetSocketLocation(FName('hand_r'))),bones={}}
         for _,bone in ipairs({'pelvis','upperarm_l','hand_l','upperarm_r','hand_r','foot_l','foot_r'}) do
-            result.bones[bone]=xyz(body.Mesh:GetSocketLocation(FName(bone)))
+            result.bones[bone]=xyz(posed:GetSocketLocation(FName(bone)))
         end
         result.weapons={}
         for _,actor in ipairs(self.weapons) do
-            result.weapons[#result.weapons+1]={mesh=actor.SkeletalMeshComponent.SkeletalMesh:GetFullName(),
+            local c=actor.SkeletalMeshComponent
+            result.weapons[#result.weapons+1]={mesh=c.SkeletalMesh:GetFullName(),
                 position=xyz(actor:K2_GetActorLocation()),hidden=actor.bHidden,
-                socket=actor.SkeletalMeshComponent:GetAttachSocketName():ToString(),
-                parent=actor.SkeletalMeshComponent:GetAttachParent():GetFullName()}
+                handle=xyz(c:GetSocketLocation(FName('Handle'))),tip=xyz(c:GetSocketLocation(FName('Blade_front_top'))),
+                visible=c:IsVisible(),scale=xyz(c.RelativeScale3D),
+                socket=c:GetAttachSocketName():ToString(),parent=c:GetAttachParent():GetFullName()}
         end
         return result
     end
