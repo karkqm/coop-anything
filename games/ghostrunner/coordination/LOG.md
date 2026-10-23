@@ -761,3 +761,22 @@ Checked on GOG build, copy A (`A:\CoopTest\Ghostrunner3`).
   this build (process gone, no log line). Read only simple types.
 - Next: W42 (client enemies follow host), then W40 with a real sword hit. Ask usav12 for the
   reliable event channel (acks, resend) on the transport.
+
+
+### 2026-10-23 - lead (kiro) - W42 in progress: enemy mirror code, second copy dies on load (memory)
+
+Checked on GOG build, copy A (`Ghostrunner3`, host) + copy B (`Ghostrunner2`, client), one PC.
+
+- Did: CoopFight v6 (`tools/coopfight/main.lua`). Host publishes a roster (enemy home positions)
+  and up to 8 enemy moves per snapshot; client stops `BrainComponent`, turns off
+  `CharacterMovement`, binds host ids to its own enemies by nearest home and lerps them.
+- Did: the mod tick now runs through `ExecuteInGameThread` (pending guard, GhostrunnerSync
+  pattern). Before it touched UObjects straight from the `LoopAsync` thread, a race with level
+  load.
+- Result: one run with both copies in the level: client bound 13 of 14 host enemies, 14 moves.
+  `brains_stopped=0` (client AI was not running yet), so "no own AI on client" is not proven.
+- Blocker: whichever copy loads the level **second** stops (log ends at world change, no crash
+  dump) - also with CoopFight **off**. Before it loads, free Windows commit is ~0.5-1 GB; one
+  copy takes ~5 GB commit. Cause is the commit limit (16 GB RAM, auto pagefile 8 GB), not the mod.
+- Next: bigger fixed pagefile (owner, admin), then rerun `w42_live.py` and check
+  `brains_stopped>0` after the client sees the player.
